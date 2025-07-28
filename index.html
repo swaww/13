@@ -1,24 +1,350 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Swaw Terminal</title>
-  <style>
-    body {
-      background-color: black;
-      color: #00FF00;
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 20px;
-      padding: 30px;
-    }
-    .line {
-      margin: 10px 0;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SWAW | Access System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+        
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            overflow: hidden;
+            background-color: #000;
+            color: #0f0;
+        }
+        
+        /* Matrix rain effect */
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.15;
+        }
+        
+        /* Glitch effect */
+        .glitch {
+            position: relative;
+        }
+        
+        .glitch::before, .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .glitch::before {
+            left: 2px;
+            text-shadow: -2px 0 #f0f;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim-1 2s infinite linear alternate-reverse;
+        }
+        
+        .glitch::after {
+            left: -2px;
+            text-shadow: -2px 0 #0ff;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim-2 2s infinite linear alternate-reverse;
+        }
+        
+        @keyframes glitch-anim-1 {
+            0% { clip: rect(32px, 9999px, 78px, 0); }
+            20% { clip: rect(54px, 9999px, 99px, 0); }
+            40% { clip: rect(32px, 9999px, 91px, 0); }
+            60% { clip: rect(28px, 9999px, 87px, 0); }
+            80% { clip: rect(45px, 9999px, 98px, 0); }
+            100% { clip: rect(62px, 9999px, 85px, 0); }
+        }
+        
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(65px, 9999px, 119px, 0); }
+            20% { clip: rect(25px, 9999px, 145px, 0); }
+            40% { clip: rect(95px, 9999px, 96px, 0); }
+            60% { clip: rect(5px, 9999px, 79px, 0); }
+            80% { clip: rect(63px, 9999px, 103px, 0); }
+            100% { clip: rect(12px, 9999px, 149px, 0); }
+        }
+        
+        /* Terminal typing effect */
+        .terminal {
+            border-right: 0.15em solid #0f0;
+            animation: blink-caret 0.75s step-end infinite;
+        }
+        
+        @keyframes blink-caret {
+            from, to { border-color: transparent; }
+            50% { border-color: #0f0; }
+        }
+        
+        /* Scanline effect */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                rgba(0, 255, 0, 0.03) 0%,
+                rgba(0, 255, 0, 0.03) 50%,
+                transparent 50%,
+                transparent 100%
+            );
+            background-size: 100% 4px;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        
+        /* Input field styling */
+        .hacker-input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid #0f0;
+            color: #0f0;
+            outline: none;
+            padding: 5px;
+            font-family: 'Share Tech Mono', monospace;
+        }
+        
+        .hacker-input:focus {
+            border-bottom: 1px solid #f0f;
+        }
+        
+        /* Button styling */
+        .hacker-btn {
+            background: transparent;
+            border: 1px solid #0f0;
+            color: #0f0;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-family: 'Share Tech Mono', monospace;
+            transition: all 0.3s;
+        }
+        
+        .hacker-btn:hover {
+            background: rgba(0, 255, 0, 0.1);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        
+        /* Access denied animation */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        .shake {
+            animation: shake 0.5s;
+        }
+    </style>
 </head>
 <body>
-  <div class="line">> Hi</div>
-  <div class="line">> Hello World</div>
-  <div class="line">> Welcome to, Swaw 305</div>
+    <!-- Matrix Rain Background -->
+    <canvas id="matrix" class="matrix-bg"></canvas>
+    
+    <!-- Scanline Effect -->
+    <div class="scanlines"></div>
+    
+    <!-- Login Screen -->
+    <div id="login-screen" class="fixed inset-0 flex items-center justify-center z-10">
+        <div class="bg-black bg-opacity-80 p-8 rounded border border-green-500 max-w-md w-full mx-4">
+            <div class="text-center mb-8">
+                <h1 class="glitch text-3xl md:text-4xl font-bold mb-2" data-text="SECURE ACCESS">SECURE ACCESS</h1>
+                <p class="text-green-500 terminal" id="typing-text"></p>
+            </div>
+            
+            <div class="mb-6">
+                <label for="serial-code" class="block text-green-500 mb-2">ENTER SERIAL CODE:</label>
+                <input type="password" id="serial-code" class="hacker-input w-full" autocomplete="off">
+                <p id="error-message" class="text-red-500 mt-2 hidden">ACCESS DENIED</p>
+            </div>
+            
+            <button id="login-btn" class="hacker-btn w-full">AUTHENTICATE</button>
+        </div>
+    </div>
+    
+    <!-- Main Content (hidden initially) -->
+    <div id="main-content" class="hidden min-h-screen flex flex-col items-center justify-center p-4 relative z-10">
+        <div class="text-center">
+            <h1 class="glitch text-4xl md:text-6xl font-bold mb-6" data-text="WELCOME TO SWAW">WELCOME TO SWAW</h1>
+            <div class="terminal-container">
+                <p id="terminal-text" class="text-green-500 text-lg md:text-xl"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Matrix Rain Effect
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        
+        const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
+        const latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const nums = '0123456789';
+        
+        const alphabet = katakana + latin + nums;
+        
+        const fontSize = 16;
+        const columns = canvas.width / fontSize;
+        
+        const rainDrops = [];
+        
+        for (let x = 0; x < columns; x++) {
+            rainDrops[x] = 1;
+        }
+        
+        const draw = () => {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#0f0';
+            ctx.font = fontSize + 'px monospace';
+            
+            for (let i = 0; i < rainDrops.length; i++) {
+                const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+                ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+                
+                if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    rainDrops[i] = 0;
+                }
+                rainDrops[i]++;
+            }
+        };
+        
+        setInterval(draw, 30);
+        
+        window.addEventListener('resize', () => {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        });
+        
+        // Login functionality
+        const loginScreen = document.getElementById('login-screen');
+        const mainContent = document.getElementById('main-content');
+        const serialCodeInput = document.getElementById('serial-code');
+        const loginBtn = document.getElementById('login-btn');
+        const errorMessage = document.getElementById('error-message');
+        const correctCode = '1313';
+        
+        // Typing effect for login screen
+        const typingText = document.getElementById('typing-text');
+        const loginMessages = [
+            "Initializing secure connection...",
+            "Verifying credentials...",
+            "Establishing encrypted channel...",
+            "Ready for authentication..."
+        ];
+        
+        let currentMessage = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+        let typingSpeed = 100;
+        
+        function typeLoginMessage() {
+            const fullText = loginMessages[currentMessage];
+            
+            if (isDeleting) {
+                typingText.textContent = fullText.substring(0, charIndex - 1);
+                charIndex--;
+                typingSpeed = 50;
+            } else {
+                typingText.textContent = fullText.substring(0, charIndex + 1);
+                charIndex++;
+                typingSpeed = 100;
+            }
+            
+            if (!isDeleting && charIndex === fullText.length) {
+                isDeleting = true;
+                typingSpeed = 1500;
+            } else if (isDeleting && charIndex === 0) {
+                isDeleting = false;
+                currentMessage = (currentMessage + 1) % loginMessages.length;
+                typingSpeed = 500;
+            }
+            
+            setTimeout(typeLoginMessage, typingSpeed);
+        }
+        
+        setTimeout(typeLoginMessage, 1000);
+        
+        // Terminal typing effect for main content
+        const terminalText = document.getElementById('terminal-text');
+        const terminalMessages = [
+            "System initialized...",
+            "Security protocols engaged...",
+            "All systems operational...",
+            "Awaiting commands..."
+        ];
+        
+        let termMessageIndex = 0;
+        let termCharIndex = 0;
+        let termIsDeleting = false;
+        
+        function typeTerminalMessage() {
+            const fullText = terminalMessages[termMessageIndex];
+            
+            if (termIsDeleting) {
+                terminalText.textContent = fullText.substring(0, termCharIndex - 1);
+                termCharIndex--;
+            } else {
+                terminalText.textContent = fullText.substring(0, termCharIndex + 1);
+                termCharIndex++;
+            }
+            
+            if (!termIsDeleting && termCharIndex === fullText.length) {
+                termIsDeleting = true;
+                setTimeout(typeTerminalMessage, 1000);
+            } else if (termIsDeleting && termCharIndex === 0) {
+                termIsDeleting = false;
+                termMessageIndex = (termMessageIndex + 1) % terminalMessages.length;
+                setTimeout(typeTerminalMessage, 500);
+            } else {
+                setTimeout(typeTerminalMessage, termIsDeleting ? 50 : 100);
+            }
+        }
+        
+        // Login button click handler
+        loginBtn.addEventListener('click', () => {
+            const enteredCode = serialCodeInput.value;
+            
+            if (enteredCode === correctCode) {
+                // Correct code - grant access
+                loginScreen.classList.add('opacity-0', 'transition-opacity', 'duration-1000');
+                
+                setTimeout(() => {
+                    loginScreen.classList.add('hidden');
+                    mainContent.classList.remove('hidden');
+                    typeTerminalMessage();
+                }, 1000);
+            } else {
+                // Wrong code - show error
+                errorMessage.classList.remove('hidden');
+                loginScreen.classList.add('shake');
+                
+                setTimeout(() => {
+                    loginScreen.classList.remove('shake');
+                }, 500);
+                
+                serialCodeInput.value = '';
+            }
+        });
+        
+        // Allow pressing Enter to submit
+        serialCodeInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loginBtn.click();
+            }
+        });
+    </script>
 </body>
 </html>
